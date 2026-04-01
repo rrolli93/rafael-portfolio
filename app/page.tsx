@@ -1,35 +1,114 @@
 "use client";
 
-const ROLES = [
-  { title: "Science Lead", org: "PeptAI", period: "2026–present" },
-  { title: "Biotech Partnerships", org: "Molecule AG", period: "2025–present" },
-  { title: "Science Lead", org: "Bio Protocol", period: "2025–present" },
+import { useEffect, useRef, useState } from "react";
+
+// ─── Data ───────────────────────────────────────────────────────────────────
+
+const CAPABILITIES = [
+  { label: "AI Drug Discovery", pct: 92 },
+  { label: "Peptide Therapeutics", pct: 88 },
+  { label: "Biological Age / Longevity", pct: 85 },
+  { label: "Decentralized Science", pct: 80 },
+  { label: "Python / Data Science", pct: 78 },
+];
+
+const CAREER = [
+  {
+    period: "2026 – PRESENT",
+    title: "Science Lead",
+    org: "PeptAI",
+    orgHref: null,
+    desc: "Leading autonomous AI-driven peptide drug discovery. From target to candidate without human bottlenecks.",
+  },
+  {
+    period: "2025 – PRESENT",
+    title: "Biotech Partnerships",
+    org: "Molecule AG",
+    orgHref: "https://molecule.to",
+    desc: "Connecting IP-NFT research funding with biotech founders. Bridging DeSci and traditional pharma.",
+  },
+  {
+    period: "2025 – PRESENT",
+    title: "Science Lead",
+    org: "Bio Protocol",
+    orgHref: "https://bio.xyz",
+    desc: "Building open decentralized science infrastructure for the next generation of biotech research.",
+  },
+  {
+    period: "PREVIOUS",
+    title: "Co-founder",
+    org: "Infinit Biosystems",
+    orgHref: null,
+    desc: "Founded a longevity biotech startup targeting biological aging mechanisms. EPFL spin-off.",
+  },
 ];
 
 const PROJECTS = [
   {
-    name: "PeptAI",
-    desc: "Autonomous AI-driven peptide drug discovery platform — from target to candidate without human bottlenecks.",
+    name: "PEPTAI",
     tag: "ACTIVE",
-    href: null as string | null,
+    tagColor: "#00ff88",
+    role: "SCIENCE LEAD",
+    desc: "Autonomous AI-driven peptide drug discovery platform. Generative models for sequence design, structure prediction, and wet-lab prioritization — from target to candidate.",
+    chips: ["LLM AGENTS", "DRUG DISCOVERY", "PEPTIDES", "AI"],
+    href: null,
   },
   {
-    name: "BioAge",
-    desc: "Biological age tracking app — log bloodwork, compute phenotypic age, monitor your trajectory.",
+    name: "BIOAGE",
     tag: "LIVE",
-    href: "https://bioage-mu.vercel.app" as string | null,
+    tagColor: "#00ff88",
+    role: "FOUNDER",
+    desc: "Biological age tracking app. Log bloodwork, compute phenotypic age using validated algorithms, monitor your trajectory. Open-source longevity tooling.",
+    chips: ["LONGEVITY", "BIOMARKERS", "REACT NATIVE", "HEALTH"],
+    href: "https://bioage-mu.vercel.app",
   },
 ];
 
-function Tag({ label, active }: { label: string; active?: boolean }) {
+const ACCOLADES = [
+  { idx: 0, text: "MSc Bioengineering — EPFL (École Polytechnique Fédérale de Lausanne)" },
+  { idx: 1, text: "Co-founder — Infinit Biosystems (EPFL spin-off)" },
+  { idx: 2, text: "Science Lead — PeptAI autonomous peptide discovery" },
+  { idx: 3, text: "Molecule AG Biotech Partnerships" },
+  { idx: 4, text: "Bio Protocol DeSci Infrastructure Lead" },
+];
+
+// ─── Primitives ──────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontSize: "10px", fontWeight: 600, letterSpacing: "0.18em",
+      color: "var(--accent)", textTransform: "uppercase",
+      marginBottom: "20px", fontFamily: "var(--font)",
+    }}>
+      {"// "}{children}
+    </p>
+  );
+}
+
+function Badge({ label, color }: { label: string; color?: string }) {
   return (
     <span style={{
-      fontSize: "9px", fontWeight: 600, letterSpacing: "0.14em",
-      padding: "2px 7px", borderRadius: "3px",
-      border: `1px solid ${active ? "var(--accent)" : "var(--border-hover)"}`,
-      color: active ? "var(--accent)" : "var(--text-muted)",
-      background: active ? "var(--accent-dim)" : "transparent",
-      textTransform: "uppercase" as const,
+      fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em",
+      padding: "2px 8px",
+      border: `1px solid ${color || "rgba(0,255,136,0.35)"}`,
+      color: color || "var(--accent)",
+      background: `${color || "var(--accent)"}12`,
+      textTransform: "uppercase",
+      fontFamily: "var(--font)",
+    }}>{label}</span>
+  );
+}
+
+function Chip({ label }: { label: string }) {
+  return (
+    <span style={{
+      fontSize: "9px", letterSpacing: "0.12em",
+      padding: "2px 7px",
+      border: "1px solid var(--border)",
+      color: "var(--text-secondary)",
+      textTransform: "uppercase",
+      fontFamily: "var(--font)",
     }}>{label}</span>
   );
 }
@@ -37,167 +116,352 @@ function Tag({ label, active }: { label: string; active?: boolean }) {
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{
-      background: "var(--bg-card)", border: "1px solid var(--border)",
-      borderRadius: "6px", padding: "28px", ...style,
-    }}>{children}</div>
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      padding: "24px",
+      transition: "border-color 0.2s",
+      ...style,
+    }}
+    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--border-bright)")}
+    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+    >{children}</div>
   );
 }
 
-function SectionLabel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+// ─── Blinking cursor ─────────────────────────────────────────────────────────
+
+function Cursor() {
   return (
-    <p style={{
-      fontSize: "9px", fontWeight: 600, letterSpacing: "0.18em",
-      color: "var(--text-muted)", textTransform: "uppercase" as const,
-      marginBottom: "20px", ...style,
-    }}>{children}</p>
+    <span style={{
+      display: "inline-block",
+      width: "10px", height: "18px",
+      background: "var(--accent)",
+      verticalAlign: "middle",
+      marginLeft: "4px",
+      animation: "blink 1.1s step-end infinite",
+    }} />
   );
 }
+
+// ─── Skill bar ───────────────────────────────────────────────────────────────
+
+function SkillBar({ label, pct }: { label: string; pct: number }) {
+  const [animated, setAnimated] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setAnimated(true); obs.disconnect(); }
+    }, { threshold: 0.3 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{ marginBottom: "14px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+        <span style={{ fontSize: "11px", color: "var(--text-secondary)", letterSpacing: "0.06em" }}>{label}</span>
+        <span style={{ fontSize: "10px", color: "var(--accent)", letterSpacing: "0.08em" }}>{pct}%</span>
+      </div>
+      <div style={{ height: "2px", background: "rgba(0,255,136,0.1)" }}>
+        <div style={{
+          height: "100%",
+          background: "var(--accent)",
+          width: animated ? `${pct}%` : "0%",
+          transition: "width 1.2s cubic-bezier(0.4,0,0.2,1)",
+          boxShadow: "0 0 8px rgba(0,255,136,0.4)",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Fade-in on scroll ────────────────────────────────────────────────────────
+
+function FadeIn({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setVisible(true); obs.disconnect(); }
+    }, { threshold: 0.1 });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? "translateY(0)" : "translateY(16px)",
+      transition: `opacity 0.55s ease ${delay}ms, transform 0.55s ease ${delay}ms`,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
+  const [time, setTime] = useState("");
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      setTime(now.toISOString().replace("T", " ").split(".")[0] + " UTC");
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const grid: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: "2px",
+  };
+
+  const gridFull: React.CSSProperties = {
+    gridColumn: "1 / -1",
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", fontFamily: "var(--font)" }}>
-      {/* Top bar */}
+
+      {/* ── NAV ── */}
       <header style={{
-        borderBottom: "1px solid var(--border)", padding: "16px 32px",
+        borderBottom: "1px solid var(--border)",
+        padding: "14px 32px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        position: "sticky", top: 0, background: "rgba(10,10,10,0.88)",
-        backdropFilter: "blur(12px)", zIndex: 100,
+        position: "sticky", top: 0,
+        background: "rgba(8,8,8,0.92)",
+        backdropFilter: "blur(16px)",
+        zIndex: 100,
       }}>
-        <span style={{ fontSize: "13px", fontWeight: 700, letterSpacing: "0.06em", color: "var(--text)" }}>
-          RAF
-        </span>
-        <nav style={{ display: "flex", gap: "28px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{
+            display: "inline-block", width: "7px", height: "7px",
+            borderRadius: "50%", background: "var(--accent)",
+            boxShadow: "0 0 8px var(--accent)",
+            animation: "blink 2s ease-in-out infinite",
+          }} />
+          <span style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.14em", color: "var(--text)" }}>
+            RAF // DASHBOARD
+          </span>
+        </div>
+        <nav style={{ display: "flex", gap: "4px" }}>
           {[
-            { label: "Email", href: "mailto:rafael.rolli.galaxy@gmail.com" },
-            { label: "LinkedIn", href: "https://www.linkedin.com/in/rafael-alain-rolli/" },
+            { label: "EMAIL", href: "mailto:rafael.rolli.galaxy@gmail.com" },
+            { label: "LINKEDIN", href: "https://www.linkedin.com/in/rafael-alain-rolli/" },
+            { label: "GITHUB", href: "https://github.com/rrolli93" },
           ].map((l) => (
-            <a key={l.label} href={l.href} target="_blank" rel="noreferrer"
-              style={{ fontSize: "12px", color: "var(--text-secondary)", letterSpacing: "0.04em" }}>
-              {l.label}
-            </a>
+            <a key={l.label} href={l.href} target="_blank" rel="noreferrer" style={{
+              fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em",
+              color: "var(--text-secondary)",
+              padding: "5px 12px",
+              border: "1px solid var(--border)",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent)";
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border-bright)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)";
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)";
+            }}
+            >{l.label}</a>
           ))}
         </nav>
       </header>
 
-      <main style={{ maxWidth: "960px", margin: "0 auto", padding: "60px 24px 100px" }}>
-        {/* HERO */}
-        <section style={{ marginBottom: "56px" }}>
-          <p style={{
-            fontSize: "11px", fontWeight: 600, letterSpacing: "0.18em",
-            color: "var(--accent)", textTransform: "uppercase" as const, marginBottom: "16px",
-          }}>Zurich, Switzerland</p>
-          <h1 style={{
-            fontSize: "clamp(34px, 5vw, 54px)", fontWeight: 700, lineHeight: 1.08,
-            letterSpacing: "-0.025em", color: "var(--text)", marginBottom: "22px",
-          }}>Rafael Alain Rolli</h1>
-          <p style={{
-            fontSize: "16px", color: "var(--text-secondary)", lineHeight: 1.8,
-            maxWidth: "600px", fontWeight: 400,
-          }}>
-            Biotechnologist and entrepreneur building at the intersection of AI, biotech, and
-            decentralized science. Co-founder of Infinit Biosystems. Currently Science Lead at
-            Molecule Protocol, working on autonomous AI-driven peptide drug discovery.
-            Previously EPFL MSc Bioengineering.
-          </p>
-          <div style={{ display: "flex", gap: "12px", marginTop: "30px", flexWrap: "wrap" }}>
-            <a href="mailto:rafael.rolli.galaxy@gmail.com"
-              style={{
-                padding: "10px 20px", borderRadius: "5px", background: "var(--accent)",
-                color: "#fff", fontSize: "13px", fontWeight: 500, letterSpacing: "0.02em",
-              }}>Get in touch</a>
-            <a href="https://www.linkedin.com/in/rafael-alain-rolli/" target="_blank" rel="noreferrer"
-              style={{
-                padding: "10px 20px", borderRadius: "5px", border: "1px solid var(--border-hover)",
-                color: "var(--text-secondary)", fontSize: "13px", fontWeight: 500,
-              }}>LinkedIn →</a>
-          </div>
-        </section>
+      <main style={{ maxWidth: "1020px", margin: "0 auto", padding: "2px 24px 80px" }}>
 
-        {/* GRID */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }} className="two-col">
-          {/* Roles */}
-          <Card>
-            <SectionLabel>Current Roles</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-              {ROLES.map((r) => (
-                <div key={r.title + r.org}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>{r.title}</span>
-                    <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.04em" }}>{r.period}</span>
+        {/* ── GRID ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px" }}>
+
+          {/* ID CARD */}
+          <FadeIn delay={0}>
+            <Card style={{ gridColumn: "1 / -1" }}>
+              <SectionLabel>ID_CARD &nbsp;<span style={{ color: "var(--text-muted)" }}>ONLINE</span></SectionLabel>
+              <h1 style={{
+                fontSize: "clamp(28px, 4vw, 46px)",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "#fff",
+                lineHeight: 1.1,
+                marginBottom: "20px",
+                fontFamily: "var(--font)",
+              }}>
+                Hello World<Cursor />
+              </h1>
+              <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px", maxWidth: "560px" }}>
+                {[
+                  ["> Subject:", "Rafael Alain Rolli"],
+                  ["> Role:", "Biotechnologist & Entrepreneur"],
+                  ["> Mission:", "AI + Biotech + Decentralized Science"],
+                  ["> Location:", "Zurich, Switzerland · 47.3769° N, 8.5417° E"],
+                ].map(([k, v]) => (
+                  <>
+                    <span key={k + "k"} style={{ color: "var(--text-muted)", fontSize: "11px", whiteSpace: "nowrap" }}>{k}</span>
+                    <span key={k + "v"} style={{ color: "var(--text-secondary)", fontSize: "11px" }}>{v}</span>
+                  </>
+                ))}
+              </div>
+            </Card>
+          </FadeIn>
+
+          {/* CAPABILITIES */}
+          <FadeIn delay={50}>
+            <Card style={{ height: "100%" }}>
+              <SectionLabel>SYS_CAPABILITIES</SectionLabel>
+              {CAPABILITIES.map(c => <SkillBar key={c.label} label={c.label} pct={c.pct} />)}
+            </Card>
+          </FadeIn>
+
+          {/* CAREER */}
+          <FadeIn delay={100}>
+            <Card style={{ height: "100%" }}>
+              <SectionLabel>CAREER_LOGS</SectionLabel>
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                {CAREER.map((c, i) => (
+                  <div key={i}>
+                    <div style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.14em", marginBottom: "3px" }}>
+                      {c.period}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: i === 0 ? "var(--accent)" : "var(--text)" }}>
+                        {c.title}
+                      </span>
+                      {c.orgHref
+                        ? <a href={c.orgHref} target="_blank" rel="noreferrer"
+                            style={{ fontSize: "11px", color: "var(--accent)", opacity: 0.7 }}>{c.org}</a>
+                        : <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{c.org}</span>
+                      }
+                    </div>
+                    <p style={{ fontSize: "10px", color: "var(--text-muted)", lineHeight: 1.6 }}>{c.desc}</p>
                   </div>
-                  <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{r.org}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+                ))}
+              </div>
+            </Card>
+          </FadeIn>
 
-          {/* Education */}
-          <Card>
-            <SectionLabel>Education</SectionLabel>
-            <p style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)", marginBottom: "6px" }}>
-              MSc Bioengineering
-            </p>
-            <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "20px" }}>
-              EPFL — École Polytechnique Fédérale de Lausanne
-            </p>
-            <div style={{
-              padding: "12px 16px", borderRadius: "4px",
-              background: "var(--accent-dim)", border: "1px solid var(--accent-glow)",
-            }}>
-              <p style={{ fontSize: "11px", color: "var(--accent)", fontWeight: 600, letterSpacing: "0.04em" }}>
-                Infinit Biosystems
-              </p>
-              <p style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "3px" }}>Co-founder</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* PROJECTS */}
-        <div style={{ marginBottom: "16px" }}>
-          <SectionLabel style={{ marginBottom: "16px" }}>Projects</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }} className="two-col">
-            {PROJECTS.map((p) => (
-              <Card key={p.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                  <span style={{ fontSize: "15px", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" }}>
-                    {p.href
-                      ? <a href={p.href} target="_blank" rel="noreferrer" style={{ color: "inherit" }}>{p.name} ↗</a>
-                      : p.name}
-                  </span>
-                  <Tag label={p.tag} active />
+          {/* PROJECTS */}
+          {PROJECTS.map((p, i) => (
+            <FadeIn key={p.name} delay={150 + i * 50}>
+              <Card style={{ height: "100%" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
+                  <SectionLabel>{"CAM_0" + (i + 1)}</SectionLabel>
+                  <Badge label={p.tag} color={p.tagColor} />
                 </div>
-                <p style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.7 }}>{p.desc}</p>
+                <h3 style={{
+                  fontSize: "18px", fontWeight: 700, letterSpacing: "0.06em",
+                  color: "#fff", marginBottom: "4px", fontFamily: "var(--font)",
+                }}>{p.name}</h3>
+                <p style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.14em", marginBottom: "12px" }}>
+                  ROLE: {p.role}
+                </p>
+                <p style={{ fontSize: "11px", color: "var(--text-secondary)", lineHeight: 1.65, marginBottom: "16px" }}>
+                  {p.desc}
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: p.href ? "16px" : "0" }}>
+                  {p.chips.map(ch => <Chip key={ch} label={ch} />)}
+                </div>
+                {p.href && (
+                  <a href={p.href} target="_blank" rel="noreferrer" style={{
+                    display: "inline-block",
+                    marginTop: "12px",
+                    fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em",
+                    color: "var(--accent)",
+                    border: "1px solid var(--border-bright)",
+                    padding: "5px 14px",
+                  }}>OPEN →</a>
+                )}
               </Card>
-            ))}
-          </div>
-        </div>
+            </FadeIn>
+          ))}
 
-        {/* FOCUS */}
-        <Card>
-          <SectionLabel>Focus Areas</SectionLabel>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-            {["AI Drug Discovery","Peptide Therapeutics","Biological Age","Decentralized Science","Longevity","Autonomous Research","Bioengineering","DeSci"].map((tag) => (
-              <span key={tag} style={{
-                fontSize: "11px", padding: "5px 12px", borderRadius: "4px",
-                border: "1px solid var(--border)", color: "var(--text-secondary)",
-              }}>{tag}</span>
-            ))}
-          </div>
-        </Card>
+          {/* ACCOLADES */}
+          <FadeIn delay={200}>
+            <Card style={{ gridColumn: "1 / -1" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <SectionLabel>ACCOLADES_TERM</SectionLabel>
+                <Badge label="ROOT ACCESS" />
+              </div>
+              <p style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: "16px", letterSpacing: "0.08em" }}>
+                {">"} ./list_credentials.sh
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {ACCOLADES.map(a => (
+                  <div key={a.idx} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                    <span style={{ fontSize: "10px", color: "var(--text-muted)", minWidth: "22px", fontWeight: 600 }}>
+                      [{a.idx}]
+                    </span>
+                    <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>{a.text}</span>
+                  </div>
+                ))}
+              </div>
+              <p style={{ marginTop: "16px", fontSize: "10px", color: "var(--text-muted)" }}>
+                {">"} _ <span style={{ animation: "blink 1.1s step-end infinite", display: "inline-block" }}>|</span>
+              </p>
+            </Card>
+          </FadeIn>
+
+          {/* GEOLOCATION */}
+          <FadeIn delay={250}>
+            <Card style={{ gridColumn: "1 / -1" }}>
+              <SectionLabel>GEOLOCATION</SectionLabel>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", alignItems: "center" }}>
+                <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {[
+                      { loc: "Zurich, Switzerland", coords: "47.3769° N, 8.5417° E", active: true },
+                      { loc: "EPFL, Lausanne", coords: "46.5197° N, 6.5659° E", active: false },
+                    ].map(l => (
+                      <div key={l.loc} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <span style={{
+                          width: "7px", height: "7px", borderRadius: "50%",
+                          background: l.active ? "var(--accent)" : "#ff8844",
+                          boxShadow: l.active ? "0 0 6px var(--accent)" : "0 0 6px #ff8844",
+                          flexShrink: 0,
+                        }} />
+                        <div>
+                          <div style={{ fontSize: "11px", color: "var(--text)" }}>{l.loc}</div>
+                          <div style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.08em" }}>{l.coords}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.1em", marginBottom: "4px" }}>SECTOR</div>
+                  <div style={{ fontSize: "13px", color: "var(--accent)", letterSpacing: "0.1em" }}>EUROPE</div>
+                  <div style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: "0.08em", marginTop: "8px" }}>
+                    SYS_CLOCK: {time || "—"}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </FadeIn>
+
+        </div>
       </main>
 
+      {/* ── FOOTER ── */}
       <footer style={{
-        borderTop: "1px solid var(--border)", padding: "20px 32px",
-        display: "flex", justifyContent: "space-between",
+        borderTop: "1px solid var(--border)",
+        padding: "16px 32px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
-        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>© 2026 Rafael Alain Rolli</span>
-        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Zurich, Switzerland</span>
+        <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.1em" }}>
+          SYSTEM STATUS: <span style={{ color: "var(--accent)" }}>OPTIMAL</span>
+        </span>
+        <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: "0.08em" }}>
+          © 2026 RAFAEL ALAIN ROLLI // INITIATED: 2015 // UPDATED: 2026
+        </span>
       </footer>
 
-      <style>{`
-        @media (max-width: 640px) { .two-col { grid-template-columns: 1fr !important; } }
-        a { transition: color 0.15s, opacity 0.15s; }
-      `}</style>
     </div>
   );
 }
